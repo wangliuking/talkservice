@@ -1,8 +1,8 @@
 package com.unionman.springbootsecurityauth2.config;
 
 import com.unionman.springbootsecurityauth2.domain.CustomUserDetail;
-import com.unionman.springbootsecurityauth2.entity.User;
-import com.unionman.springbootsecurityauth2.repository.UserRepository;
+import com.unionman.springbootsecurityauth2.entity.WebUser;
+import com.unionman.springbootsecurityauth2.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -12,9 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,8 +21,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 
 /**
- * @description Security核心配置
  * @author Zhifeng.Zeng
+ * @description Security核心配置
  */
 @Configuration
 @EnableWebSecurity
@@ -33,7 +31,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
 
     @Bean
     @Override
@@ -42,7 +40,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public RestTemplate restTemplate(){
+    public RestTemplate restTemplate() {
         return new RestTemplate();
     }
 
@@ -50,24 +48,20 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected UserDetailsService userDetailsService() {
         BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-       return new UserDetailsService(){
-           @Override
-           public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-               log.info("username:{}",username);
-               User user = userRepository.findUserByAccount(username);
-               if(user != null){
-                   CustomUserDetail customUserDetail = new CustomUserDetail();
-                   customUserDetail.setUsername(user.getAccount());
-                   customUserDetail.setPassword("{bcrypt}"+bCryptPasswordEncoder.encode(user.getPassword()));
-                   List<GrantedAuthority> list = AuthorityUtils.createAuthorityList(user.getRole().getRole());
-                   customUserDetail.setAuthorities(list);
-                   return customUserDetail;
-               }else {//返回空
-                   return null;
-               }
-
-           }
-       };
+        return (String username) -> {
+            WebUser webUser = userMapper.findWebUserById(username);
+            if (webUser != null) {
+                CustomUserDetail customUserDetail = new CustomUserDetail();
+                customUserDetail.setUserId(webUser.getUserId());
+                customUserDetail.setPassword("{bcrypt}" + bCryptPasswordEncoder.encode(webUser.getPassword()));
+                List<GrantedAuthority> list = AuthorityUtils.createAuthorityList(webUser.getPower()+"");
+                customUserDetail.setAuthorities(list);
+                log.info("customUserDetail:{}", customUserDetail);
+                return customUserDetail;
+            } else {//返回空
+                return null;
+            }
+        };
     }
 
     @Bean

@@ -1,5 +1,6 @@
 package com.unionman.springbootsecurityauth2.domain;
 
+import lombok.Data;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,14 +13,14 @@ import java.util.Collection;
  * @description 自定义userDetail 关联security oauth2
  * @date 2019/3/4
  */
-@Setter
+@Data
 public class CustomUserDetail implements UserDetails, Serializable {
     private static final long serialVersionUID = -8478114427891717226L;
 
     /**
-     * 用户名
+     * 用户id
      */
-    private String username;
+    private String userId;
     /**
      * 密码
      */
@@ -57,7 +58,7 @@ public class CustomUserDetail implements UserDetails, Serializable {
 
     @Override
     public String getUsername() {
-        return username;
+        return userId;
     }
 
     @Override
